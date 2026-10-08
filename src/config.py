@@ -35,9 +35,9 @@ DEFAULT_PROFILES = {
 @dataclass
 class AppConfig:
     enabled: bool = True
-    sensitivity: float = 0.06          # Lower means more sensitive (trigger threshold)
+    sensitivity: float = 0.015         # Lower means more sensitive (trigger threshold)
     stereo_balance: float = 0.0        # -1.0 (favor left) to 1.0 (favor right)
-    min_side_ratio: float = 1.15       # Minimum amplitude ratio to distinguish Left vs Right
+    min_side_ratio: float = 1.08       # Minimum amplitude ratio to distinguish Left vs Right
     typing_guard_enabled: bool = True  # Ignore taps while typing on keyboard
     typing_cooldown_ms: int = 350      # Milliseconds to silence taps after any keystroke
     double_tap_window_ms: int = 380    # Max time between taps for a double-tap

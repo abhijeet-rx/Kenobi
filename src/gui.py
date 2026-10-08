@@ -103,7 +103,7 @@ class DeskZoneWidget(QFrame):
 
 
 class LevelMeterWidget(QWidget):
-    """Dual-channel stereo VU level meter."""
+    """Dual-channel stereo VU level meter with logarithmic dBFS scaling."""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.left_level = 0.0
@@ -111,9 +111,12 @@ class LevelMeterWidget(QWidget):
         self.setMinimumHeight(24)
 
     def set_levels(self, left: float, right: float):
-        # Smoothing & scaling
-        self.left_level = max(0.0, min(1.0, left * 8.0))
-        self.right_level = max(0.0, min(1.0, right * 8.0))
+        import math
+        l_db = 20 * math.log10(max(left, 1e-6))
+        r_db = 20 * math.log10(max(right, 1e-6))
+        # Map -60 dB -> 0.0, 0 dB -> 1.0
+        self.left_level = max(0.0, min(1.0, (l_db + 60.0) / 60.0))
+        self.right_level = max(0.0, min(1.0, (r_db + 60.0) / 60.0))
         self.update()
 
     def paintEvent(self, event):
@@ -480,28 +483,23 @@ class MainWindow(QMainWindow):
     def _populate_audio_devices(self):
         devices = AudioEngine.get_input_devices()
         self.device_combo.clear()
-        self.device_combo.addItem("Default Microphone", -1)
+        self.device_combo.addItem("Auto-Detect Active Microphone", -1)
 
-        preferred_idx = -1
+        best_detected = AudioEngine.auto_detect_active_device()
+
         for dev in devices:
-            label = f"{dev['name']} ({dev['channels']} ch)"
+            label = f"[{dev['index']:2d}] {dev['name']} ({dev['api']}, {dev['channels']} ch)"
             self.device_combo.addItem(label, dev['index'])
 
-            # Smart detection: prioritize 'Microphone Array' if default isn't explicitly set
-            if self.config.audio_device_index == -1:
-                if "microphone array" in dev['name'].lower() and preferred_idx == -1:
-                    preferred_idx = dev['index']
-
         if self.config.audio_device_index != -1:
-            # Set to saved index
             idx = self.device_combo.findData(self.config.audio_device_index)
             if idx >= 0:
                 self.device_combo.setCurrentIndex(idx)
-        elif preferred_idx != -1:
-            idx = self.device_combo.findData(preferred_idx)
+        elif best_detected != -1:
+            idx = self.device_combo.findData(best_detected)
             if idx >= 0:
                 self.device_combo.setCurrentIndex(idx)
-                self.config.audio_device_index = preferred_idx
+                self.config.audio_device_index = best_detected
 
     def _change_device(self, combo_idx: int):
         device_index = self.device_combo.itemData(combo_idx)
@@ -528,9 +526,8 @@ class MainWindow(QMainWindow):
             lbl.setText(spec.get("label", "None"))
 
     def _update_sensitivity(self, val: int):
-        # Invert: higher val = lower threshold (more sensitive)
-        sens = (1.0 - (val / 100.0)) * 0.15
-        sens = max(0.008, min(0.15, sens))
+        # Range: 0.003 (very sensitive) to 0.05 (firm taps)
+        sens = 0.05 - (val / 100.0) * (0.05 - 0.003)
         self.config.sensitivity = sens
         self.audio_engine.update_settings(self.config.sensitivity, self.config.stereo_balance, self.config.min_side_ratio)
         self.config.save()
