@@ -21,25 +21,25 @@ class HUDOverlay(QWidget):
 
         # Main Layout
         self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(20, 12, 20, 12)
-        self.layout.setSpacing(14)
+        self.layout.setContentsMargins(18, 10, 20, 10)
+        self.layout.setSpacing(12)
 
         # Icon Label
         self.icon_label = QLabel("⚡", self)
-        self.icon_label.setStyleSheet("color: #38bdf8; font-size: 20px; font-weight: bold;")
+        self.icon_label.setStyleSheet("color: #38bdf8; font-size: 16px; font-weight: bold;")
         self.layout.addWidget(self.icon_label)
 
         # Text Label
         self.text_label = QLabel("Kenobi Active", self)
-        self.text_label.setStyleSheet("color: #f1f5f9; font-size: 14px; font-weight: 600;")
+        self.text_label.setStyleSheet("color: #f1f5f9; font-family: 'Segoe UI', 'Geist', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.3px;")
         self.layout.addWidget(self.text_label)
 
         # Container styling
         self.setStyleSheet("""
             QWidget {
-                background-color: rgba(15, 23, 42, 0.88);
-                border: 1px solid rgba(56, 189, 248, 0.4);
-                border-radius: 20px;
+                background-color: rgba(11, 17, 32, 0.94);
+                border: 1px solid rgba(56, 189, 248, 0.45);
+                border-radius: 12px;
             }
         """)
 
@@ -58,17 +58,42 @@ class HUDOverlay(QWidget):
         self.hide_timer.timeout.connect(self._fade_out)
 
     def show_gesture(self, gesture_name: str, action_label: str, duration_ms: int = 1200):
-        # Choose icon & directional styling
+        is_double = "DOUBLE" in gesture_name
+        accent_color = "#c084fc" if is_double else "#38bdf8"
+        bg_tint = "rgba(192, 132, 252, 0.12)" if is_double else "rgba(56, 189, 248, 0.12)"
+        border_tint = "rgba(192, 132, 252, 0.5)" if is_double else "rgba(56, 189, 248, 0.5)"
+
         icons = {
-            "LEFT_SINGLE": "◀  Left Tap",
-            "RIGHT_SINGLE": "Right Tap  ▶",
-            "LEFT_DOUBLE": "◀◀ Left Double-Tap",
-            "RIGHT_DOUBLE": "Right Double-Tap ▶▶",
+            "LEFT_SINGLE": "◀  LEFT TAP",
+            "RIGHT_SINGLE": "RIGHT TAP  ▶",
+            "LEFT_DOUBLE": "◀◀  LEFT DOUBLE-TAP",
+            "RIGHT_DOUBLE": "RIGHT DOUBLE-TAP  ▶▶",
         }
-        icon_display = icons.get(gesture_name, "⚡ Desk Tap")
+        icon_display = icons.get(gesture_name, "⚡ DESK TAP")
         
         self.icon_label.setText(icon_display)
+        self.icon_label.setStyleSheet(f"""
+            QLabel {{
+                color: {accent_color};
+                font-family: 'Segoe UI', 'Geist', sans-serif;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 1px;
+                background-color: {bg_tint};
+                border: 1px solid {border_tint};
+                border-radius: 6px;
+                padding: 4px 8px;
+            }}
+        """)
         self.text_label.setText(action_label)
+
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: rgba(11, 17, 32, 0.94);
+                border: 1px solid {border_tint};
+                border-radius: 12px;
+            }}
+        """)
         self.adjustSize()
 
         # Position at bottom-center of the primary screen
